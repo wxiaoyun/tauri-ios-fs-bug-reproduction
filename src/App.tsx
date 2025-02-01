@@ -1,6 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import { save } from '@tauri-apps/plugin-dialog';
-import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { save } from "@tauri-apps/plugin-dialog";
+import {
+  BaseDirectory,
+  readTextFile,
+  writeTextFile,
+} from "@tauri-apps/plugin-fs";
 import { createSignal } from "solid-js";
 import "./App.css";
 import logo from "./assets/logo.svg";
@@ -14,31 +18,49 @@ function App() {
     setGreetMsg(await invoke("greet", { name: name() }));
   }
 
-  async function handleDownload() {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const randomString = Array.from(
-      { length: 10000 },
-      () => characters.charAt(Math.floor(Math.random() * characters.length))
-    ).join('');
+  async function handlePickerDownload() {
+    const characters =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const randomString = Array.from({ length: 10000 }, () =>
+      characters.charAt(Math.floor(Math.random() * characters.length)),
+    ).join("");
 
     try {
-      // Open file dialog for save location
       const savePath = await save({
-        title: "Select Save Location"
+        title: "Select Save Location",
       });
 
       if (savePath) {
         console.log("SAVE PATH", savePath);
 
-        // Save the random string to a file
-        await writeTextFile(
-          savePath,
-          randomString,
-        );
+        await writeTextFile(savePath, randomString);
 
         const fileContent = await readTextFile(savePath);
         console.log("FILE CONTENT LENGTH", fileContent.length);
       }
+    } catch (error) {
+      console.error("Error saving file:", error);
+    }
+  }
+
+  async function handleForceDownload() {
+    const characters =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    const randomString = Array.from({ length: 10000 }, () =>
+      characters.charAt(Math.floor(Math.random() * characters.length)),
+    ).join("");
+
+    try {
+      console.log("Forcing download to Downloads folder");
+
+      await writeTextFile("test.txt", randomString, {
+        baseDir: BaseDirectory.Download,
+      });
+
+      const fileContent = await readTextFile("test.txt", {
+        baseDir: BaseDirectory.Download,
+      });
+      console.log("FILE CONTENT LENGTH", fileContent.length);
     } catch (error) {
       console.error("Error saving file:", error);
     }
@@ -76,9 +98,13 @@ function App() {
         <button type="submit">Greet</button>
       </form>
       <p>{greetMsg()}</p>
-      
-      <button onClick={handleDownload}>
+
+      <button onClick={handlePickerDownload}>
         Generate and Download Random String
+      </button>
+
+      <button onClick={handleForceDownload}>
+        Generate and Download Random String to Downloads Folder
       </button>
     </main>
   );
